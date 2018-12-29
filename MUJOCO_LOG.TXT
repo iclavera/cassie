@@ -1,0 +1,6 @@
+Sat Dec 22 13:11:38 2018
+ERROR: Expired activation key
+
+Sat Dec 22 13:12:31 2018
+ERROR: Could not open activation key file /home/ignasi/GitRepos/softlearning/softlearning/environments/cassie/assets/mjkey.txt
+
