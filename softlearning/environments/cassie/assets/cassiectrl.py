@@ -14,12 +14,14 @@
 # ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 # OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
-from cassiemujoco import *
+from softlearning.environments.cassie.assets.cassiemujoco import *
 import time
+
 
 # Null controller
 def controller(y):
     return pd_in_t()
+
 
 # Set up UDP connection
 cassie = CassieUdp(remote_addr='127.0.0.1')

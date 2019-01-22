@@ -21,9 +21,7 @@ import gym
 # STABILISTY_COST_COEF = 0.01
 
 
-
 class CassieEnv(gym.Env, utils.EzPickle):
-
     # TODO: add randomization of initial state
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
@@ -57,7 +55,9 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         self.num_qpos = self.parameters['num_qpos']
         self.num_qvel = self.parameters['num_qvel']
-        self.obs_dim = self.num_qpos + self.num_qvel
+        self.obs_dim = 44
+        # self.obs_dim = 66
+        # self.obs_dim = 40
 
         # reward function coeffs
         self.stability_cost_coef = stability_cost_coef
@@ -71,12 +71,142 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         utils.EzPickle.__init__(self, locals())
 
-    def _cassie_state_to_obs(self, state):
-        qpos = np.asarray(state.qpos()[1:])
-        assert self.num_qpos == qpos.shape[0]
-        qvel = np.asarray(state.qvel())
-        assert self.num_qvel == qvel.shape[0]
-        return np.concatenate([qpos, qvel], axis=0)
+    def _cassie_state_to_obs(self, int_state, state):
+        # pelvis
+        pelvis_ori = np.array(int_state.pelvis.orientation)
+        pelvis_pos = np.array(int_state.pelvis.position)
+        pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity)
+        pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity)
+        pelvis_trans_acc = np.array(int_state.pelvis.translationalAcceleration)
+
+        # joints
+        joint_pos = np.array(int_state.joint.position)
+        joint_vel = np.array(int_state.joint.velocity)
+
+        # motors
+        motor_pos = np.array(int_state.motor.position)
+        motor_vel = np.array(int_state.motor.position)
+
+
+
+        # qpos_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 20, 21, 22, 23, 28, 29, 30, 34]
+        qpos_idx = [1, 2, 3, 4, 5, 6,
+                    7, 8, 9, 14, 20, 21, 22, 23, 28, 34,
+                    15, 16, 20, 29, 30, 34
+                    ]
+        # qpos_idx = [1, 2, 3, 4, 5, 6]
+        qpos = np.asarray(state.qpos())[qpos_idx]
+        # qvel_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 18, 19, 20, 21, 25, 26, 27, 31]
+        qvel_idx = [0, 1, 2, 3, 4, 5,
+                    6, 7, 8, 12, 18, 19, 20, 21, 25, 31,
+                    13, 14, 18, 26, 27, 31]
+        # qvel_idx = [0, 1, 2, 3, 4, 5]
+        qvel = np.asarray(state.qvel())[qvel_idx]
+
+        # obs = np.concatenate(
+        #     [qpos, qvel, motor_pos, joint_pos, motor_vel, joint_vel], axis=0)
+
+        obs = np.concatenate([qpos, qvel])
+
+        return obs
+
+    def step(self, action):
+        assert action.ndim == 1 and action.shape == (self.act_dim,)
+        u = self._action_to_pd_u(action)
+        if self.apply_forces and self._time_step % 10 == 0:
+            self.apply_random_force()
+        state, internal_state = self.do_simulation(u, self.frame_skip)
+        obs = self._cassie_state_to_obs(internal_state, state)
+
+        reward, forward_vel = self.reward(internal_state, state, action)
+
+        done = self.done(state)
+        info = {'forward_vel': forward_vel}
+
+        return obs, reward, done, info
+
+    def reset(self):
+        self.sim = CassieSim()
+        if self.fix_pelvis: self.sim.hold()
+        u = self._action_to_pd_u(np.zeros(self.act_dim,))
+        internal_state = self.sim.step_pd(u)
+        state = self.sim.get_state()
+        self._time_step = 0
+        return self._cassie_state_to_obs(internal_state, state)
+
+    def do_simulation(self, u, n_frames):
+        assert n_frames >= 1
+        for _ in range(n_frames):
+            internal_state_obj = self.sim.step_pd(u) # step_pd returns state_out_t structure -> however this structure is still not fully understood
+        joint_state = self.sim.get_state() # get CassieState object
+        return joint_state, internal_state_obj
+
+    def done(self, state):
+        pelvis_pos = np.array(state.qpos())
+        return pelvis_pos[2] < 0.65
+
+    def reward(self, internal_state, state, action):
+        # reward fct
+        qvel = np.array(state.qvel())
+        pelvis_rot_vel = qvel[3:6]
+        pelvis_transl_vel = qvel[:3]
+
+        foot_forces = self.get_foot_forces(internal_state)
+        motor_torques = _to_np(internal_state.motor.torque)
+        forward_vel = pelvis_transl_vel[0]
+        ctrl_cost = self.ctrl_cost_coef * 0.5 * np.mean(np.square(motor_torques/self.torque_limits))
+        stability_cost = self.stability_cost_coef * 0.5 * np.mean(np.square(pelvis_transl_vel[1:]))  #  quadratic velocity of pelvis in y and z direction ->
+        rotation_cost = self.rotation_cost_coef * 0.5 * np.mean(np.square(pelvis_rot_vel))
+                                                                                              #  enforces to hold the pelvis in same position while walking
+        impact_cost = self.impact_cost_coef * 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
+        if self.task == 'balancing':
+            vel_cost = self.stability_cost_coef * forward_vel ** 2
+            reward = - vel_cost - ctrl_cost - stability_cost - impact_cost + self.alive_bonus
+        elif self.task == 'fixed-vel':
+            vel_reward = np.exp(- (2.3 - forward_vel) ** 2)
+            reward = vel_reward - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
+        else:
+            reward = forward_vel - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
+        return reward, forward_vel
+
+    def render(self, *args, **kwargs):
+        if self.vis is None:
+            print('Setting up cassie visualizer')
+            self.setup_cassie_vis()
+        self.vis.draw(self.sim)
+
+    def get_foot_forces(self, internal_state):
+        left_toe = _to_np(internal_state.leftFoot.toeForce)
+        left_heel = _to_np(internal_state.leftFoot.heelForce)
+        right_toe = _to_np(internal_state.rightFoot.toeForce)
+        right_heel = _to_np(internal_state.rightFoot.heelForce)
+        return np.concatenate([left_toe, left_heel, right_toe, right_heel])
+
+    def apply_random_force(self):
+        force = np.zeros((6,))
+        y_force = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
+        force[1] = y_force
+        self.sim.apply_force(force)
+
+    @property
+    def torque_limits(self):
+        return np.concatenate([self.parameters['cassie_torque_limits']] * 2)
+
+    @property
+    def dt(self):
+        return self.model_timestep
+
+    @property
+    def action_space(self):
+        return spaces.Box(low=self.act_limits_array[:, 0], high=self.act_limits_array[:,1], dtype=np.float32)
+
+    @property
+    def observation_space(self):
+        obs_limit = np.inf * np.ones(self.obs_dim)
+        return spaces.Box(-obs_limit, obs_limit, dtype=np.float32)
+
+    def setup_cassie_vis(self):
+        self.vis = CassieVis()
 
     def _action_to_pd_u(self, action):
         """
@@ -107,116 +237,6 @@ class CassieEnv(gym.Env, utils.EzPickle):
                         act_idx += 1
         assert act_idx == len(action)
         return u
-
-    def step(self, action):
-        assert action.ndim == 1 and action.shape == (self.act_dim,)
-        u = self._action_to_pd_u(action)
-        if self.apply_forces and self._time_step % 10 == 0:
-            self.apply_random_force()
-        state, internal_state = self.do_simulation(u, self.frame_skip)
-        obs = self._cassie_state_to_obs(state)
-
-        # reward fct
-        pelvis_vel = obs[self.num_qpos:self.num_qpos+3]
-        pelvis_rotation = obs[self.num_qpos+3:self.num_qpos+6]
-
-        foot_forces = self.get_foot_forces(internal_state)
-        motor_torques = _to_np(internal_state.motor.torque)
-        forward_vel = pelvis_vel[0]
-        ctrl_cost = self.ctrl_cost_coef * 0.5 * np.mean(np.square(motor_torques/self.torque_limits))
-        stability_cost = self.stability_cost_coef * 0.5 * np.mean(np.square(pelvis_vel[1:]))  #  quadratic velocity of pelvis in y and z direction ->
-        rotation_cost = self.rotation_cost_coef * 0.5 * np.mean(np.square(pelvis_rotation))
-                                                                                              #  enforces to hold the pelvis in same position while walking
-        impact_cost = self.impact_cost_coef * 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
-        if self.task == 'balancing':
-            vel_cost = self.stability_cost_coef * forward_vel ** 2
-            reward = - vel_cost - ctrl_cost - stability_cost - impact_cost + self.alive_bonus
-        elif self.task == 'fixed-vel':
-            vel_reward = np.exp(- (2.3 - forward_vel) ** 2)
-            reward = vel_reward - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
-        else:
-            reward = forward_vel - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
-
-        done = self.done(obs)
-        info = {'forward_vel': forward_vel, 'ctrl_cost': ctrl_cost, 'stability_cost': stability_cost}
-
-        return obs, reward, done, info
-
-    def reset(self):
-        self.sim = CassieSim()
-        if self.fix_pelvis: self.sim.hold()
-        state = self.sim.get_state()
-        self._time_step = 0
-        return self._cassie_state_to_obs(state)
-
-    def do_simulation(self, u, n_frames):
-        assert n_frames >= 1
-        for _ in range(n_frames):
-            internal_state_obj = self.sim.step_pd(u) # step_pd returns state_out_t structure -> however this structure is still not fully understood
-        joint_state = self.sim.get_state() # get CassieState object
-        return joint_state, internal_state_obj
-
-    def done(self, obs):
-        if obs.ndim == 1 or obs.ndim == 2:
-            height = pelvis_height_from_obs(obs)
-            return height < 0.65
-        else:
-            raise AssertionError('obs must be 1d or 2d numpy array')
-
-    def reward(self, obs, action, obs_next):
-        raise NotImplementedError #TODO: ctrl_cost requires motor torques which are neither in the state space nor in the
-
-    def render(self, *args, **kwargs):
-        if self.vis is None:
-            print('Setting up cassie visualizer')
-            self.setup_cassie_vis()
-        self.vis.draw(self.sim)
-
-    def get_foot_forces(self, internal_state):
-        left_toe = _to_np(internal_state.leftFoot.toeForce)
-        left_heel = _to_np(internal_state.leftFoot.heelForce)
-        right_toe = _to_np(internal_state.rightFoot.toeForce)
-        right_heel = _to_np(internal_state.rightFoot.heelForce)
-        return np.concatenate([left_toe, left_heel, right_toe, right_heel])
-
-    def apply_random_force(self):
-        force = np.zeros((6,))
-        y_force = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
-        force[2] = y_force
-        self.sim.apply_force(force)
-
-    @property
-    def torque_limits(self):
-        return np.concatenate([self.parameters['cassie_torque_limits']] * 2)
-
-    @property
-    def dt(self):
-        return self.model_timestep
-
-    @property
-    def action_space(self):
-        return spaces.Box(low=self.act_limits_array[:, 0], high=self.act_limits_array[:,1], dtype=np.float32)
-
-    @property
-    def observation_space(self):
-        obs_limit = np.inf * np.ones(self.obs_dim)
-        return spaces.Box(-obs_limit, obs_limit, dtype=np.float32)
-
-    def log_diagnostics(self, paths):
-        pass
-        # forward_vel = [np.mean(path['env_infos']['forward_vel']) for path in paths]
-        # ctrl_cost = [np.mean(path['env_infos']['ctrl_cost']) for path in paths]
-        # stability_cost = [np.mean(path['env_infos']['stability_cost']) for path in paths]
-        # path_length = [path["observations"].shape[0] for path in paths]
-        #
-        # logger.record_tabular('AvgForwardVel', np.mean(forward_vel))
-        # logger.record_tabular('StdForwardVel', np.std(forward_vel))
-        # logger.record_tabular('AvgCtrlCost', np.mean(ctrl_cost))
-        # logger.record_tabular('AvgStabilityCost', np.mean(stability_cost))
-        # logger.record_tabular('AvgPathLength', np.mean(path_length))
-
-    def setup_cassie_vis(self):
-        self.vis = CassieVis()
 
     def _build_act_limits_array(self):
         limits = []
@@ -268,28 +288,19 @@ class CassieEnv(gym.Env, utils.EzPickle):
                                ctrl_cost_coef=0.001,
                                stability_cost_coef=0.01,)
 
-    # #TODO: sth. is wrong with the pelvis_pos -> should be absolute from world coord. e.g. (0,0,1) in the beginning but that is not the case
-    # def _cassie_state_to_obs(self, state):
-    #     # pelvis
-    #     pelvis_ori = _to_np(state.pelvis.orientation)  # TODO: figure out if this is a quaternion or axis % angle
-    #     pelvis_pos = _to_np(state.pelvis.position)
-    #     pelvis_rot_vel = _to_np(state.pelvis.rotationalVelocity)
-    #     pelvis_transl_vel = _to_np(state.pelvis.translationalVelocity)
-    #     print(pelvis_pos)
-    #
-    #     # joints
-    #     joints_pos = _to_np(state.joint.position)
-    #     joints_vel = _to_np(state.joint.velocity)
-    #
-    #     # motors
-    #     motor_pos = _to_np(state.motor.position)
-    #     motor_vel = _to_np(state.motor.position)
-    #
-    #     obs = np.concatenate(
-    #         [pelvis_pos[1:], pelvis_ori, pelvis_transl_vel, pelvis_rot_vel, joints_pos, joints_vel, motor_pos,
-    #          motor_vel], axis=0)
-    #     assert obs.shape == (self.obs_dim,)
-    #     return obs
+    def log_diagnostics(self, paths):
+        pass
+        # forward_vel = [np.mean(path['env_infos']['forward_vel']) for path in paths]
+        # ctrl_cost = [np.mean(path['env_infos']['ctrl_cost']) for path in paths]
+        # stability_cost = [np.mean(path['env_infos']['stability_cost']) for path in paths]
+        # path_length = [path["observations"].shape[0] for path in paths]
+        #
+        # logger.record_tabular('AvgForwardVel', np.mean(forward_vel))
+        # logger.record_tabular('StdForwardVel', np.std(forward_vel))
+        # logger.record_tabular('AvgCtrlCost', np.mean(ctrl_cost))
+        # logger.record_tabular('AvgStabilityCost', np.mean(stability_cost))
+        # logger.record_tabular('AvgPathLength', np.mean(path_length))
+
 
 def pelvis_height_from_obs(obs):
     if obs.ndim == 1:
@@ -299,20 +310,25 @@ def pelvis_height_from_obs(obs):
     else:
         raise NotImplementedError
 
+
 def _to_np(o, dtype=np.float32):
     return np.array([o[i] for i in range(len(o))], dtype=dtype)
 
 
 if __name__ == '__main__':
     render = True
-    env = CassieEnv(render=render, fix_pelvis=True, frame_skip=200)
+    env = CassieEnv(render=render, fix_pelvis=False, frame_skip=200)
+    import time
 
     for i in range(5):
         obs = env.reset()
-        for j in range(500):
+        for j in range(50000):
             cum_forward_vel = 0
             act = env.action_space.sample()
-            print(act)
+            env.apply_random_force()
             obs, reward, done, info = env.step(act)
-            if render: env.render()
-            if done: break
+            if render:
+                env.render()
+            time.sleep(1)
+            # if done:
+            #     break

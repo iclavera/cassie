@@ -281,7 +281,7 @@ pack_cassie_out_t.argtypes = [POINTER_T(struct_c__SA_cassie_out_t), POINTER_T(ct
 unpack_cassie_out_t = _libraries['./libcassiemujoco.so'].unpack_cassie_out_t
 unpack_cassie_out_t.restype = None
 unpack_cassie_out_t.argtypes = [POINTER_T(ctypes.c_ubyte), POINTER_T(struct_c__SA_cassie_out_t)]
-struct_c__SA_cassie_user_in_t._pack_ = True # source:False
+struct_c__SA_cassie_user_in_t._pack_ = True  # source:False
 struct_c__SA_cassie_user_in_t._fields_ = [
     ('torque', ctypes.c_double * 10),
     ('telemetry', ctypes.c_int16 * 9),
