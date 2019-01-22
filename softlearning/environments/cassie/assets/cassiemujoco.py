@@ -16,6 +16,7 @@ from .cassiemujoco_ctypes import *
 import os
 import ctypes
 import OpenGL.GL as gl
+import numpy as np
 
 # Get base directory
 _dir_path = os.path.dirname(os.path.realpath(__file__))
@@ -25,8 +26,22 @@ cassie_mujoco_init(str.encode(_dir_path))
 
 # Interface classes
 class CassieSim:
+    joint_names = ['hipRollDrive', 'hipYawDrive', 'hipPitchDrive', 'kneeDrive', 'footDrive', 'shinJoint', 'tarsusJoint',
+                   'footJoint']
+
     def __init__(self):
         self.c = cassie_sim_init()
+        self.packet_header_info = packet_header_info_t()
+        self.recvlen = 2 + 697
+        self.sendlen = 2 + 58
+        self.recvlen_pd = 2 + 493
+        self.sendlen_pd = 2 + 476
+        self.recvbuf = (ctypes.c_ubyte * max(self.recvlen, self.recvlen_pd))()
+        self.sendbuf = (ctypes.c_ubyte * max(self.sendlen, self.sendlen_pd))()
+        self.inbuf = ctypes.cast(ctypes.byref(self.recvbuf, 2),
+                                 ctypes.POINTER(ctypes.c_ubyte))
+        self.outbuf = ctypes.cast(ctypes.byref(self.sendbuf, 2),
+                                  ctypes.POINTER(ctypes.c_ubyte))
 
     def step(self, u):
         y = cassie_out_t()
@@ -84,8 +99,51 @@ class CassieSim:
             xfrc_array[i] = xfrc[i]
         cassie_sim_apply_force(self.c, xfrc_array, body)
 
+    def recv_wait(self):
+        cassie_out = cassie_out_t()
+        unpack_cassie_out_t(self.inbuf, cassie_out)
+        return cassie_out
+
+    @property
+    def obs_qpos(self):
+        cassie_out = self.recv_wait()
+        qpos_left = np.array([getattr(cassie_out.leftLeg, joint).position for joint in self.joint_names])
+        qpos_right = np.array([getattr(cassie_out.rightLeg, joint).position for joint in self.joint_names])
+        return np.concatenate([qpos_left, qpos_right])
+
+    @property
+    def obs_qvel(self):
+        cassie_out = self.recv_wait()
+        # cassie_out = self.get_state()
+        qvel_left = np.array([getattr(cassie_out.leftLeg, joint).velocity for joint in self.joint_names])
+        qvel_right = np.array([getattr(cassie_out.rightLeg, joint).velocity for joint in self.joint_names])
+        return np.concatenate([qvel_left, qvel_right])
+
+    @property
+    def pelvis_measurementms(self):
+        cassie_out = self.recv_wait()
+        # cassie_out = self.get_state()
+        nav = cassie_out.pelvis.vectorNav
+
+        orien = np.array(nav.orientation)
+        angvel = np.array(nav.angularVelocity)
+        linacc = np.array(nav.linearAcceleration)
+        mag = np.array(nav.magneticField)
+
+        return orien, angvel, linacc, mag
+
+    def get_obs(self):
+        qpos, qvel = self.obs_qpos, self.obs_qvel
+        orien, angvel, linacc, mag = self.pelvis_measurements
+        obs = np.concatenate([qpos, qvel, orien, angvel, linacc]) # TODO: probably need to integrate to get linvel of the torso
+        return obs
+
     def clear_forces(self):
         cassie_sim_clear_forces(self.c)
+
+    def data(self):
+        data = cassie_sim_mjdata(self.c)
+        return data
 
     def __del__(self):
         cassie_sim_free(self.c)
@@ -159,6 +217,7 @@ class CassieState:
 
     def __del__(self):
         cassie_state_free(self.s)
+
 
 class CassieUdp:
     def __init__(self, remote_addr='127.0.0.1', remote_port='25000',

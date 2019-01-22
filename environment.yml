@@ -1,4 +1,4 @@
-name: cassie
+name: soft-cassie
 channels:
 - defaults
 - conda-forge
