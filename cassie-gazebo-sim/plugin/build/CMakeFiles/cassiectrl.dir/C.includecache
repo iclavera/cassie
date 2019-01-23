@@ -20,7 +20,7 @@ ws2tcpip.h
 sys/socket.h
 -
 
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/example/cassiectrl.c
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/example/cassiectrl.c
 stdbool.h
 -
 stdlib.h
@@ -34,11 +34,11 @@ time.h
 unistd.h
 -
 cassie_out_t.h
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/example/cassie_out_t.h
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/example/cassie_out_t.h
 cassie_user_in_t.h
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/example/cassie_user_in_t.h
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/example/cassie_user_in_t.h
 udp.h
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/example/udp.h
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/example/udp.h
 
 /usr/include/x86_64-linux-gnu/asm/socket.h
 asm-generic/socket.h

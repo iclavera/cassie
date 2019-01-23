@@ -12,7 +12,7 @@ ws2tcpip.h
 sys/socket.h
 -
 
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/udp.c
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/udp.c
 winsock2.h
 -
 unistd.h
@@ -26,7 +26,7 @@ netdb.h
 fcntl.h
 -
 udp.h
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/udp.h
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/udp.h
 stdio.h
 -
 

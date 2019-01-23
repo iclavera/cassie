@@ -52,9 +52,9 @@ ws2tcpip.h
 sys/socket.h
 -
 
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp
 CassiePlugin.hpp
-/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/CassiePlugin.hpp
+/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/CassiePlugin.hpp
 
 /usr/include/gazebo-9/gazebo/Master.hh
 string

@@ -43,10 +43,10 @@ RM = /usr/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/ignasi/GitRepos/cassie-gazebo-sim/plugin
+CMAKE_SOURCE_DIR = /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build
+CMAKE_BINARY_DIR = /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/cassie_plugin.dir/depend.make
@@ -59,16 +59,16 @@ include CMakeFiles/cassie_plugin.dir/flags.make
 
 CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o: CMakeFiles/cassie_plugin.dir/flags.make
 CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o: ../src/CassiePlugin.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o -c /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o -c /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp
 
 CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp > CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp > CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.i
 
 CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp -o CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/CassiePlugin.cpp -o CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.s
 
 CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o.requires:
 
@@ -83,16 +83,16 @@ CMakeFiles/cassie_plugin.dir/src/CassiePlugin.cpp.o.provides.build: CMakeFiles/c
 
 CMakeFiles/cassie_plugin.dir/src/udp.c.o: CMakeFiles/cassie_plugin.dir/flags.make
 CMakeFiles/cassie_plugin.dir/src/udp.c.o: ../src/udp.c
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/cassie_plugin.dir/src/udp.c.o"
-	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/cassie_plugin.dir/src/udp.c.o   -c /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/udp.c
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building C object CMakeFiles/cassie_plugin.dir/src/udp.c.o"
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -o CMakeFiles/cassie_plugin.dir/src/udp.c.o   -c /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/udp.c
 
 CMakeFiles/cassie_plugin.dir/src/udp.c.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing C source to CMakeFiles/cassie_plugin.dir/src/udp.c.i"
-	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/udp.c > CMakeFiles/cassie_plugin.dir/src/udp.c.i
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -E /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/udp.c > CMakeFiles/cassie_plugin.dir/src/udp.c.i
 
 CMakeFiles/cassie_plugin.dir/src/udp.c.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling C source to assembly CMakeFiles/cassie_plugin.dir/src/udp.c.s"
-	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/src/udp.c -o CMakeFiles/cassie_plugin.dir/src/udp.c.s
+	/usr/bin/cc  $(C_DEFINES) $(C_INCLUDES) $(C_FLAGS) -S /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/src/udp.c -o CMakeFiles/cassie_plugin.dir/src/udp.c.s
 
 CMakeFiles/cassie_plugin.dir/src/udp.c.o.requires:
 
@@ -222,7 +222,7 @@ libcassie_plugin.so: /usr/lib/x86_64-linux-gnu/libavcodec-ffmpeg.so
 libcassie_plugin.so: /usr/lib/x86_64-linux-gnu/libavutil-ffmpeg.so
 libcassie_plugin.so: /usr/lib/x86_64-linux-gnu/libavutil-ffmpeg.so
 libcassie_plugin.so: CMakeFiles/cassie_plugin.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX shared library libcassie_plugin.so"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX shared library libcassie_plugin.so"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/cassie_plugin.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -240,6 +240,6 @@ CMakeFiles/cassie_plugin.dir/clean:
 .PHONY : CMakeFiles/cassie_plugin.dir/clean
 
 CMakeFiles/cassie_plugin.dir/depend:
-	cd /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/ignasi/GitRepos/cassie-gazebo-sim/plugin /home/ignasi/GitRepos/cassie-gazebo-sim/plugin /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build /home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles/cassie_plugin.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build /home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles/cassie_plugin.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/cassie_plugin.dir/depend
 

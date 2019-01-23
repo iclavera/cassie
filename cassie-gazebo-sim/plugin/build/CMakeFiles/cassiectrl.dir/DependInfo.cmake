@@ -4,7 +4,7 @@ set(CMAKE_DEPENDS_LANGUAGES
   )
 # The set of files for implicit dependencies of each language:
 set(CMAKE_DEPENDS_CHECK_C
-  "/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/example/cassiectrl.c" "/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles/cassiectrl.dir/example/cassiectrl.c.o"
+  "/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/example/cassiectrl.c" "/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles/cassiectrl.dir/example/cassiectrl.c.o"
   )
 set(CMAKE_C_COMPILER_ID "GNU")
 
@@ -35,7 +35,7 @@ set(CMAKE_C_TARGET_INCLUDE_PATH
 
 # Targets to which this target links.
 set(CMAKE_TARGET_LINKED_INFO_FILES
-  "/home/ignasi/GitRepos/cassie-gazebo-sim/plugin/build/CMakeFiles/cassie_plugin.dir/DependInfo.cmake"
+  "/home/ignasi/GitRepos/softlearning/cassie-gazebo-sim/plugin/build/CMakeFiles/cassie_plugin.dir/DependInfo.cmake"
   )
 
 # Fortran module output directory.
