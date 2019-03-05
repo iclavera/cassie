@@ -162,7 +162,7 @@ ENV_PARAMS = {
 NUM_CHECKPOINTS = 5
 
 
-def get_variant_spec(universe, domain, task, policy):
+def get_variant_spec(universe, domain, task, policy, frameskip, policytask):
     variant_spec = {
         'domain': domain,
         'task': task,
@@ -207,6 +207,9 @@ def get_variant_spec(universe, domain, task, policy):
                 domain, DEFAULT_NUM_EPOCHS) // NUM_CHECKPOINTS
         },
     }
+
+    variant_spec['env_params']['policytask'] = policytask
+    variant_spec['env_params']['frame_skip'] = frameskip
 
     return variant_spec
 

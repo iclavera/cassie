@@ -175,6 +175,15 @@ def get_parser(allow_policy_list=False):
                         default=True,
                         help="Whether or not to query yes/no on remote run.")
 
+    parser.add_argument('--frameskip',
+                        type=int,
+                        default=None)
+
+
+    parser.add_argument('--policytask',
+                        type=str,
+                        default=None)
+
     return parser
 
 

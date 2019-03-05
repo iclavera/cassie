@@ -50,6 +50,7 @@ class ExperimentRunner(tune.Trainable):
         sampler = self.sampler = get_sampler_from_variant(variant)
         Qs = self.Qs = get_Q_function_from_variant(variant, env)
         policy = self.policy = get_policy_from_variant(variant, env, Qs)
+
         initial_exploration_policy = self.initial_exploration_policy = (
             get_policy('UniformPolicy', env))
 
@@ -196,7 +197,7 @@ def main():
         variant_spec = get_variant_spec_image(
             universe, domain, task, args.policy)
     else:
-        variant_spec = get_variant_spec(universe, domain, task, args.policy)
+        variant_spec = get_variant_spec(universe, domain, task, args.policy, frameskip=args.frameskip, policytask=args.policytask)
 
     variant_spec['mode'] = args.mode
 

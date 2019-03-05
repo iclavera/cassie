@@ -1,4 +1,4 @@
-from softlearning.environments.cassie.assets.cassiemujoco import CassieSim, CassieVis, pd_in_t, state_out_t
+from softlearning.environments.cassie.assets.cassiemujoco import CassieSim, CassieVis, pd_in_t, state_out_t, CassieState
 import numpy as np
 from gym import utils
 from gym import spaces
@@ -26,8 +26,8 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1e-3, alive_bonus=0.2, impact_cost_coef=1e-5,
-                 rotation_cost_coef=1e-2, task='running', ctrl_type='T', apply_forces=False):
-
+                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=False):
+        print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
             self.vis = CassieVis()
@@ -44,7 +44,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
         self.fix_pelvis = fix_pelvis
         self.model_timestep = 0.01
         self.frame_skip = frame_skip
-        self.task = task
+        self.task = policytask
         self.ctrl_type = ctrl_type
         self._pd_params_to_set = []
         self.apply_forces = apply_forces
