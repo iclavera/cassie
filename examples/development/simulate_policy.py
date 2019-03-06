@@ -53,6 +53,15 @@ def simulate_policy(args):
         get_policy_from_variant(variant, env, Qs=[None]))
     policy.set_weights(pickleable['policy_weights'])
 
+    if True: #hard coded
+        import numpy as np
+        import scipy.io as sio    
+        ws = policy.get_weights()
+        w0, b0, w1, b1, w2, b2 = ws[0], ws[1], ws[2], ws[3], ws[4], ws[5]
+        savematpath = '/home/parsa/projects/cassie/cassie_ignasi/policy_weights.mat' #hard coded
+        sio.savemat(savematpath, {'w0':w0, 'b0':b0, 'w1':w1, 'b1':b1, 'w2':w2, 'b2':b2})
+
+
     with policy.set_deterministic(args.deterministic):
         paths = rollouts(env,
                          policy,
