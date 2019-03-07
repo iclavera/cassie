@@ -76,7 +76,6 @@ def simulate_policy(args):
                         'b1':b1,
                         'w2':w2,
                         'b2':b2})
-
     with policy.set_deterministic(args.deterministic):
         paths = rollouts(env,
                          policy,
