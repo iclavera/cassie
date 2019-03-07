@@ -22,22 +22,24 @@ import math
 # STABILISTY_COST_COEF = 0.01
 
 
-def quaternion_to_euler(q):
-    x, y, z, w = list(q)
-    t0 = +2.0 * (w * x + y * z)
-    t1 = +1.0 - 2.0 * (x * x + y * y)
-    X = math.atan2(t0, t1)
+# def quaternion_to_euler(q):
+#     x, y, z, w = list(q)
+#     t0 = +2.0 * (w * x + y * z)
+#     t1 = +1.0 - 2.0 * (x * x + y * y)
+#     X = math.atan2(t0, t1)
 
-    t2 = +2.0 * (w * y - z * x)
-    t2 = +1.0 if t2 > +1.0 else t2
-    t2 = -1.0 if t2 < -1.0 else t2
-    Y = math.asin(t2)
+#     t2 = +2.0 * (w * y - z * x)
+#     t2 = +1.0 if t2 > +1.0 else t2
+#     t2 = -1.0 if t2 < -1.0 else t2
+#     Y = math.asin(t2)
 
-    t3 = +2.0 * (w * z + x * y)
-    t4 = +1.0 - 2.0 * (y * y + z * z)
-    Z = math.atan2(t3, t4)
+#     t3 = +2.0 * (w * z + x * y)
+#     t4 = +1.0 - 2.0 * (y * y + z * z)
+#     Z = math.atan2(t3, t4)
 
-    return np.array([X, Y, Z])
+#     return np.array([X, Y, Z])
+
+from eulerangles import quat2euler as quaternion_to_euler
 
 
 class CassieEnv(gym.Env, utils.EzPickle):
@@ -98,7 +100,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
         pelvis_vel_rel_to_r_foot = -np.array(int_state.rightFoot.footTranslationalVelocity)
 
         # pelvis
-        pelvis_ori = quaternion_to_euler(np.array(int_state.pelvis.orientation).astype(np.float64)) # TODO: Change to euler
+        pelvis_ori = np.array(quaternion_to_euler(np.array(int_state.pelvis.orientation).astype(np.float64))) # TODO: Change to euler
         pelvis_pos = np.array(int_state.pelvis.position)
         pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity).astype(np.float64)
         pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity).astype(np.float64)
