@@ -1,10 +1,9 @@
-from softlearning.environments.cassie.assets.cassiemujoco import CassieSim, CassieVis, pd_in_t,\
-    state_out_t, CassieState, cassie_user_in_t
+from softlearning.environments.cassie.assets.cassiemujoco import CassieSim, CassieVis, pd_in_t, state_out_t, CassieState
 import numpy as np
 from gym import utils
 from gym import spaces
 import gym
-import math
+
 
 # CASSIE_TORQUE_LIMITS = np.array([4.5*25, 4.5*25, 12.2*16, 12.2*16, 0.9*50]) # ctrl_limit * gear_ratio
 # CASSIE_MOTOR_VEL_LIMIT = np.array([2900, 2900, 1300, 1300, 5500]) / 60 / (2*np.pi) # max_rpm / 60 / 2*pi
@@ -22,30 +21,8 @@ import math
 # STABILISTY_COST_COEF = 0.01
 
 
-# def quaternion_to_euler(q):
-#     x, y, z, w = list(q)
-#     t0 = +2.0 * (w * x + y * z)
-#     t1 = +1.0 - 2.0 * (x * x + y * y)
-#     X = math.atan2(t0, t1)
-
-#     t2 = +2.0 * (w * y - z * x)
-#     t2 = +1.0 if t2 > +1.0 else t2
-#     t2 = -1.0 if t2 < -1.0 else t2
-#     Y = math.asin(t2)
-
-#     t3 = +2.0 * (w * z + x * y)
-#     t4 = +1.0 - 2.0 * (y * y + z * z)
-#     Z = math.atan2(t3, t4)
-
-#     return np.array([X, Y, Z])
-
-from eulerangles import quat2euler as quaternion_to_euler
-
-
 class CassieEnv(gym.Env, utils.EzPickle):
     # TODO: add randomization of initial state
-    _JOINT_NAMES = ['hipRollDrive', 'hipYawDrive', 'hipPitchDrive', 'kneeDrive', 'shinJoint', 'tarsusJoint',
-                    'footDrive']
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1e-3, alive_bonus=0.2, impact_cost_coef=1e-5,
@@ -78,7 +55,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         self.num_qpos = self.parameters['num_qpos']
         self.num_qvel = self.parameters['num_qvel']
-        self.obs_dim = 40
+        self.obs_dim = 44
         # self.obs_dim = 66
         # self.obs_dim = 40
 
@@ -95,35 +72,42 @@ class CassieEnv(gym.Env, utils.EzPickle):
         utils.EzPickle.__init__(self, locals())
 
     def _cassie_state_to_obs(self, int_state, state):
-        # foot_state = self.sim.recv_wait_state()
-        pelvis_pos_rel_to_r_foot = -np.array(int_state.rightFoot.position).astype(np.float64)
-        pelvis_vel_rel_to_r_foot = -np.array(int_state.rightFoot.footTranslationalVelocity)
-
         # pelvis
-        pelvis_ori = np.array(quaternion_to_euler(np.array(int_state.pelvis.orientation).astype(np.float64))) # TODO: Change to euler
+        pelvis_ori = np.array(int_state.pelvis.orientation)
         pelvis_pos = np.array(int_state.pelvis.position)
-        pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity).astype(np.float64)
-        pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity).astype(np.float64)
+        pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity)
+        pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity)
         pelvis_trans_acc = np.array(int_state.pelvis.translationalAcceleration)
 
         # joints
-        joint_pos = np.array(int_state.joint.position).astype(np.float64)
-        joint_vel = np.array(int_state.joint.velocity).astype(np.float64)
+        joint_pos = np.array(int_state.joint.position)
+        joint_vel = np.array(int_state.joint.velocity)
 
         # motors
-        motor_pos = np.array(int_state.motor.position).astype(np.float64)
-        motor_vel = np.array(int_state.motor.position).astype(np.float64)
+        motor_pos = np.array(int_state.motor.position)
+        motor_vel = np.array(int_state.motor.position)
 
-        qpos = np.array([motor_pos[0], motor_pos[1], motor_pos[2], motor_pos[3], joint_pos[0], joint_pos[1], motor_pos[4],
-                         motor_pos[5], motor_pos[6], motor_pos[7], motor_pos[8], joint_pos[3], joint_pos[4], motor_pos[4]])
 
-        qvel = np.array([motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3], joint_vel[0], joint_vel[1], motor_vel[4],
-             motor_vel[5], motor_vel[6], motor_vel[7], motor_vel[8], joint_vel[3], joint_vel[4], motor_vel[4]])
 
-        obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos,
-                              pelvis_transl_vel, pelvis_rot_vel, qvel])
+        # qpos_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 20, 21, 22, 23, 28, 29, 30, 34]
+        qpos_idx = [1, 2, 3, 4, 5, 6,
+                    7, 8, 9, 14, 20, 21, 22, 23, 28, 34,
+                    15, 16, 20, 29, 30, 34
+                    ]
+        # qpos_idx = [1, 2, 3, 4, 5, 6]
+        qpos = np.asarray(state.qpos())[qpos_idx]
+        # qvel_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 18, 19, 20, 21, 25, 26, 27, 31]
+        qvel_idx = [0, 1, 2, 3, 4, 5,
+                    6, 7, 8, 12, 18, 19, 20, 21, 25, 31,
+                    13, 14, 18, 26, 27, 31]
+        # qvel_idx = [0, 1, 2, 3, 4, 5]
+        qvel = np.asarray(state.qvel())[qvel_idx]
 
-        import pdb;pdb.set_trace();
+        # obs = np.concatenate(
+        #     [qpos, qvel, motor_pos, joint_pos, motor_vel, joint_vel], axis=0)
+
+        obs = np.concatenate([qpos, qvel])
+
         return obs
 
     def step(self, action):

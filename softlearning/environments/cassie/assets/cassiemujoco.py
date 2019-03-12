@@ -26,7 +26,8 @@ cassie_mujoco_init(str.encode(_dir_path))
 
 # Interface classes
 class CassieSim:
-    joint_names = ['hipRollDrive', 'hipYawDrive', 'hipPitchDrive', 'kneeDrive', 'shinJoint', 'tarsusJoint', 'footDrive']
+    joint_names = ['hipRollDrive', 'hipYawDrive', 'hipPitchDrive', 'kneeDrive', 'footDrive', 'shinJoint', 'tarsusJoint',
+                   'footJoint']
 
     def __init__(self):
         self.c = cassie_sim_init()
@@ -40,14 +41,6 @@ class CassieSim:
         self.inbuf = ctypes.cast(ctypes.byref(self.recvbuf, 2),
                                  ctypes.POINTER(ctypes.c_ubyte))
         self.outbuf = ctypes.cast(ctypes.byref(self.sendbuf, 2),
-                                  ctypes.POINTER(ctypes.c_ubyte))
-
-
-        self.recvbuf_pd = (ctypes.c_ubyte * max(self.recvlen, self.recvlen_pd))()
-        self.sendbuf_pd = (ctypes.c_ubyte * max(self.sendlen, self.sendlen_pd))()
-        self.inbuf_pd = ctypes.cast(ctypes.byref(self.recvbuf_pd, 2),
-                                 ctypes.POINTER(ctypes.c_ubyte))
-        self.outbuf_pd = ctypes.cast(ctypes.byref(self.sendbuf_pd, 2),
                                   ctypes.POINTER(ctypes.c_ubyte))
 
     def step(self, u):
@@ -106,11 +99,6 @@ class CassieSim:
             xfrc_array[i] = xfrc[i]
         cassie_sim_apply_force(self.c, xfrc_array, body)
 
-    def recv_wait_state(self):
-        state_out = state_out_t()
-        unpack_state_out_t(self.inbuf_pd, state_out)
-        return state_out
-
     def recv_wait(self):
         cassie_out = cassie_out_t()
         unpack_cassie_out_t(self.inbuf, cassie_out)
@@ -132,7 +120,7 @@ class CassieSim:
         return np.concatenate([qvel_left, qvel_right])
 
     @property
-    def pelvis_measurements(self):
+    def pelvis_measurementms(self):
         cassie_out = self.recv_wait()
         # cassie_out = self.get_state()
         nav = cassie_out.pelvis.vectorNav

@@ -1,6 +1,4 @@
 import argparse
-import numpy as np
-import scipy.io as sio
 from distutils.util import strtobool
 import json
 import os
@@ -24,10 +22,6 @@ def parse_args():
                         default='human',
                         choices=('human', 'rgb_array', None),
                         help="Mode to render the rollouts in.")
-    parser.add_argument('--slowdown', '-s',
-                        type=float,
-                        default=0.,
-                        help="Slowdown of the rendering")
     parser.add_argument('--deterministic', '-d',
                         type=strtobool,
                         nargs='?',
@@ -35,12 +29,6 @@ def parse_args():
                         default=True,
                         help="Evaluate policy deterministically.")
 
-    parser.add_argument('--save_matlab', '-m',
-                        type=strtobool,
-                        nargs='?',
-                        const=False,
-                        default=False,
-                        help="Evaluate policy deterministically.")
     args = parser.parse_args()
 
     return args
@@ -65,24 +53,12 @@ def simulate_policy(args):
         get_policy_from_variant(variant, env, Qs=[None]))
     policy.set_weights(pickleable['policy_weights'])
 
-    if args.save_matlab: #hard coded
-        ws = policy.get_weights()
-        w0, b0, w1, b1, w2, b2 = ws[0], ws[1], ws[2], ws[3], ws[4], ws[5]
-        savematpath = '/home/ignasi/policy_weights.mat' #hard coded
-        sio.savemat(savematpath,
-                        {'w0':w0,
-                        'b0':b0,
-                        'w1':w1,
-                        'b1':b1,
-                        'w2':w2,
-                        'b2':b2})
     with policy.set_deterministic(args.deterministic):
         paths = rollouts(env,
                          policy,
                          path_length=args.max_path_length,
                          n_paths=args.num_rollouts,
-                         render_mode=args.render_mode,
-                         slowdown=args.slowdown)
+                         render_mode=args.render_mode)
 
     if args.render_mode != 'human':
         from pprint import pprint; import pdb; pdb.set_trace()

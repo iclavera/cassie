@@ -1,5 +1,4 @@
 from copy import deepcopy
-import time
 
 import numpy as np
 
@@ -39,8 +38,7 @@ def rollout(env,
             path_length,
             callback=None,
             render_mode=None,
-            break_on_terminal=True,
-            slowdown=1):
+            break_on_terminal=True):
     observation_space = env.observation_space
     action_space = env.action_space
 
@@ -70,7 +68,6 @@ def rollout(env,
                 images.append(image)
             else:
                 env.render()
-                time.sleep(slowdown)
 
         if terminal:
             policy.reset()
@@ -89,10 +86,9 @@ def rollout(env,
     return path
 
 
-def rollouts(env, policy, path_length, n_paths, render_mode=None, slowdown=1):
+def rollouts(env, policy, path_length, n_paths, render_mode=None):
     paths = [
-        rollout(env, policy, path_length, render_mode=render_mode,
-            slowdown=slowdown)
+        rollout(env, policy, path_length, render_mode=render_mode)
         for i in range(n_paths)
     ]
 
