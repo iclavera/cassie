@@ -20,12 +20,15 @@ import gym
 # CTRL_COST_COEF = 0.001
 # STABILISTY_COST_COEF = 0.01
 
+from softlearning.environments.cassie.eulerangles import quat2euler as quaternion_to_euler
+
+
 
 class CassieEnv(gym.Env, utils.EzPickle):
     # TODO: add randomization of initial state
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
-                 stability_cost_coef=1e-2, ctrl_cost_coef=1e-3, alive_bonus=0.2, impact_cost_coef=1e-5,
+                 stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
                  rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=False):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
@@ -55,9 +58,16 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         self.num_qpos = self.parameters['num_qpos']
         self.num_qvel = self.parameters['num_qvel']
-        self.obs_dim = 44
         # self.obs_dim = 66
+        # self.obs_dim = 44
         # self.obs_dim = 40
+        # self.obs_dim = 35        
+        self.obs_dim = 38
+        self.apply_random_force_counter = 0
+        self.apply_random_force_maxcount = 0.1/(0.0005*frame_skip)
+        self.prob_random_force = 0.15
+        self.random_force_on = False
+        self.epmaxlen = 500
 
         # reward function coeffs
         self.stability_cost_coef = stability_cost_coef
@@ -87,51 +97,116 @@ class CassieEnv(gym.Env, utils.EzPickle):
         motor_pos = np.array(int_state.motor.position)
         motor_vel = np.array(int_state.motor.position)
 
+        # 3,4,5,6 convert to euler
 
+        qpos_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 20, 21, 22, 23, 28, 29, 30, 34] # dim=21
+        # qpos_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 20, 21, 22, 23, 28, 34, 15, 16, 20, 29, 30, 34]
 
-        # qpos_idx = [1, 2, 3, 4, 5, 6, 7, 8, 9, 14, 15, 16, 20, 21, 22, 23, 28, 29, 30, 34]
-        qpos_idx = [1, 2, 3, 4, 5, 6,
-                    7, 8, 9, 14, 20, 21, 22, 23, 28, 34,
-                    15, 16, 20, 29, 30, 34
-                    ]
-        # qpos_idx = [1, 2, 3, 4, 5, 6]
         qpos = np.asarray(state.qpos())[qpos_idx]
-        # qvel_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 18, 19, 20, 21, 25, 26, 27, 31]
-        qvel_idx = [0, 1, 2, 3, 4, 5,
-                    6, 7, 8, 12, 18, 19, 20, 21, 25, 31,
-                    13, 14, 18, 26, 27, 31]
-        # qvel_idx = [0, 1, 2, 3, 4, 5]
+        qvel_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 13, 14, 18, 19, 20, 21, 25, 26, 27, 31] # dim=20
+        # qvel_idx = [0, 1, 2, 3, 4, 5, 6, 7, 8, 12, 18, 19, 20, 21, 25, 31, 13, 14, 18, 26, 27, 31]
+
         qvel = np.asarray(state.qvel())[qvel_idx]
 
         # obs = np.concatenate(
         #     [qpos, qvel, motor_pos, joint_pos, motor_vel, joint_vel], axis=0)
 
-        obs = np.concatenate([qpos, qvel])
+         # foot_state = self.sim.recv_wait_state()
+
+        euler_pelvis_orien = np.array(quaternion_to_euler(qpos[3:7]))
+        euler_pelvis_vel = np.array(quaternion_to_euler(np.concatenate([np.array([0]), qvel[3:6]])))
+
+        # qpos = np.concatenate([qpos[:3], euler_pelvis_orien, qpos[7:]])
+        # qvel = np.concatenate([qvel[:3], euler_pelvis_vel, qvel[6:]])
+
+        # qpos = np.concatenate([euler_pelvis_orien, qpos[7:]])
+        # qvel = np.concatenate([euler_pelvis_vel, qvel[6:]])
+
+        qpos = qpos[3:]
+        # qvel = qvel[3:]
+
+        if False:
+            pelvis_pos_rel_to_r_foot = -np.array(int_state.rightFoot.position).astype(np.float64)
+            pelvis_vel_rel_to_r_foot = -np.array(int_state.rightFoot.footTranslationalVelocity)
+
+            # pelvis
+            pelvis_ori = np.array(quaternion_to_euler(np.array(int_state.pelvis.orientation).astype(np.float64))) # TODO: Change to euler
+            pelvis_pos = np.array(int_state.pelvis.position)
+            pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity).astype(np.float64)
+            pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity).astype(np.float64)
+            pelvis_trans_acc = np.array(int_state.pelvis.translationalAcceleration)
+
+            # joints
+            joint_pos = np.array(int_state.joint.position).astype(np.float64)
+            joint_vel = np.array(int_state.joint.velocity).astype(np.float64)
+
+            # motors
+            motor_pos = np.array(int_state.motor.position).astype(np.float64)
+            motor_vel = np.array(int_state.motor.position).astype(np.float64)
+
+            qpos = np.array([motor_pos[0], motor_pos[1], motor_pos[2], motor_pos[3], joint_pos[0], joint_pos[1], motor_pos[4],
+                             motor_pos[5], motor_pos[6], motor_pos[7], motor_pos[8], joint_pos[3], joint_pos[4], motor_pos[4]])
+
+            qvel = np.array([motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3], joint_vel[0], joint_vel[1], motor_vel[4],
+                 motor_vel[5], motor_vel[6], motor_vel[7], motor_vel[8], joint_vel[3], joint_vel[4], motor_vel[4]])
+
+            obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos,
+                                  pelvis_transl_vel, pelvis_rot_vel, qvel])
+
+
+        if True:
+            obs = np.concatenate([qpos, qvel])
+        
+        # state randomization
+        obs = obs + np.random.normal(0, 0.01, size=len(obs))
+        # state randomization
 
         return obs
 
     def step(self, action):
         assert action.ndim == 1 and action.shape == (self.act_dim,)
         u = self._action_to_pd_u(action)
-        if self.apply_forces and self._time_step % 10 == 0:
+        # if self.apply_forces and self._time_step % 10 == 0:
+        if np.random.uniform(low=0, high=1.0) < self.prob_random_force:
+            self.random_force_on = True
+
+        if self.apply_forces and self.random_force_on:
+            self.apply_random_force_counter += 1
+            if self.apply_random_force_counter > self.apply_random_force_maxcount:
+                self.random_force_on = False
+                self.apply_random_force_counter = 0
             self.apply_random_force()
+
         state, internal_state = self.do_simulation(u, self.frame_skip)
         obs = self._cassie_state_to_obs(internal_state, state)
 
-        reward, forward_vel = self.reward(internal_state, state, action)
+        reward, forward_vel, control_cost = self.reward(internal_state, state, action)
 
+        self._time_step += 1
         done = self.done(state)
-        info = {'forward_vel': forward_vel}
+        info = {'forward_vel': forward_vel, 'control_cost': control_cost}
 
         return obs, reward, done, info
 
     def reset(self):
         self.sim = CassieSim()
         if self.fix_pelvis: self.sim.hold()
+
+        #initial state randomization
+        qpos = self.sim.get_state().qpos()
+        qvel = self.sim.get_state().qvel()
+        qpos = qpos + np.random.uniform(low=-0.01, high=0.01, size=len(qpos))
+        qvel = qvel + np.random.uniform(low=-0.01, high=0.01, size=len(qvel))
+        self.sim.set_qpos(qpos)
+        self.sim.set_qvel(qvel)
+        #initial state randomization
+
         u = self._action_to_pd_u(np.zeros(self.act_dim,))
         internal_state = self.sim.step_pd(u)
         state = self.sim.get_state()
         self._time_step = 0
+        self.apply_random_force_counter = 0
+        self.random_force_on = False        
         return self._cassie_state_to_obs(internal_state, state)
 
     def do_simulation(self, u, n_frames):
@@ -143,7 +218,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def done(self, state):
         pelvis_pos = np.array(state.qpos())
-        return pelvis_pos[2] < 0.65
+        return pelvis_pos[2] < 0.65 or self._time_step > self.epmaxlen
 
     def reward(self, internal_state, state, action):
         # reward fct
@@ -160,14 +235,25 @@ class CassieEnv(gym.Env, utils.EzPickle):
                                                                                               #  enforces to hold the pelvis in same position while walking
         impact_cost = self.impact_cost_coef * 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
         if self.task == 'balancing':
-            vel_cost = self.stability_cost_coef * forward_vel ** 2
-            reward = - vel_cost - ctrl_cost - stability_cost - impact_cost + self.alive_bonus
+            # vel_cost = self.stability_cost_coef * forward_vel ** 2
+            # reward = - vel_cost - ctrl_cost - stability_cost - impact_cost + self.alive_bonus
+
+            vel_cost = forward_vel ** 2
+            ctrl_cost = 0.5 * np.mean(np.square(motor_torques/self.torque_limits))
+            stability_cost =  0.5 * np.mean(np.square(qvel[:6]))  #  quadratic velocity of pelvis in y and z direction ->
+            impact_cost = 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
+
+            reward = 1.0*np.exp(-100.0 * vel_cost) \
+                    + 1.0*np.exp(-100.0 * ctrl_cost) \
+                    + 1.0*np.exp(-100.0 * stability_cost) \
+                    + 1.0*np.exp(-100.0 * impact_cost)
+            # print(np.exp(-10* vel_cost), np.exp(- 10*ctrl_cost), np.exp(- 10*stability_cost), np.exp(- 10*impact_cost))
         elif self.task == 'fixed-vel':
             vel_reward = np.exp(- (2.3 - forward_vel) ** 2)
             reward = vel_reward - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
         else:
             reward = forward_vel - ctrl_cost - stability_cost - rotation_cost - impact_cost + self.alive_bonus
-        return reward, forward_vel
+        return reward, forward_vel, ctrl_cost
 
     def render(self, *args, **kwargs):
         if self.vis is None:
