@@ -65,17 +65,16 @@ def simulate_policy(args):
         get_policy_from_variant(variant, env, Qs=[None]))
     policy.set_weights(pickleable['policy_weights'])
 
-    if args.save_matlab: #hard coded
+    if True: #hard coded
+        import numpy as np
+        import scipy.io as sio    
         ws = policy.get_weights()
         w0, b0, w1, b1, w2, b2 = ws[0], ws[1], ws[2], ws[3], ws[4], ws[5]
-        savematpath = '/home/ignasi/policy_weights.mat' #hard coded
-        sio.savemat(savematpath,
-                        {'w0':w0,
-                        'b0':b0,
-                        'w1':w1,
-                        'b1':b1,
-                        'w2':w2,
-                        'b2':b2})
+        savematpath = '/home/parsa/projects/cassie/cassie_ignasi3/policy_weights.mat' #hard coded
+        sio.savemat(savematpath, {'w0':w0, 'b0':b0, 'w1':w1, 'b1':b1, 'w2':w2, 'b2':b2})
+
+    # env.unwrapped.vis.start_recording()
+
     with policy.set_deterministic(args.deterministic):
         paths = rollouts(env,
                          policy,
@@ -87,6 +86,8 @@ def simulate_policy(args):
     if args.render_mode != 'human':
         from pprint import pprint; import pdb; pdb.set_trace()
         pass
+
+    # env.unwrapped.vis.stop_recording('./test_vid.mp4', speedup=1, frame_skip=20, timestep=env.unwrapped.dt)
 
     return paths
 

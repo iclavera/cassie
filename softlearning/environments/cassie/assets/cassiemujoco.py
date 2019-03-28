@@ -172,7 +172,8 @@ class CassieVis:
 
     def stop_recording(self, video_filename, speedup=1, timestep=1, frame_skip=1):
         import moviepy.editor as mpy
-        fps = int(speedup / timestep * frame_skip)
+        # fps = int(speedup / timestep * frame_skip)
+        fps = 30
         clip = mpy.ImageSequenceClip(self._buffer, fps=fps)
         if video_filename[-3:] == 'gif':
             clip.write_gif(video_filename, fps=fps)

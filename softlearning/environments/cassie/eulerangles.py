@@ -86,7 +86,8 @@ The convention of rotation around ``z``, followed by rotation around
 import math
 
 import numpy as np
-import quaternions as nq
+
+import softlearning.environments.cassie.quaternions as nq
 
 
 _FLOAT_EPS_4 = np.finfo(float).eps * 4.0
