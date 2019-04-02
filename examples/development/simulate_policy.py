@@ -1,6 +1,4 @@
 import argparse
-import numpy as np
-import scipy.io as sio
 from distutils.util import strtobool
 import json
 import os
@@ -24,10 +22,6 @@ def parse_args():
                         default='human',
                         choices=('human', 'rgb_array', None),
                         help="Mode to render the rollouts in.")
-    parser.add_argument('--slowdown', '-s',
-                        type=float,
-                        default=0.,
-                        help="Slowdown of the rendering")
     parser.add_argument('--deterministic', '-d',
                         type=strtobool,
                         nargs='?',
@@ -35,12 +29,6 @@ def parse_args():
                         default=True,
                         help="Evaluate policy deterministically.")
 
-    parser.add_argument('--save_matlab', '-m',
-                        type=strtobool,
-                        nargs='?',
-                        const=False,
-                        default=False,
-                        help="Evaluate policy deterministically.")
     args = parser.parse_args()
 
     return args
@@ -80,8 +68,7 @@ def simulate_policy(args):
                          policy,
                          path_length=args.max_path_length,
                          n_paths=args.num_rollouts,
-                         render_mode=args.render_mode,
-                         slowdown=args.slowdown)
+                         render_mode=args.render_mode)
 
     if args.render_mode != 'human':
         from pprint import pprint; import pdb; pdb.set_trace()
