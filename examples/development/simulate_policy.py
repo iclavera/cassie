@@ -5,7 +5,7 @@ import os
 import pickle
 
 import tensorflow as tf
-
+import numpy as np
 from softlearning.policies.utils import get_policy_from_variant
 from softlearning.samplers import rollouts
 
@@ -69,6 +69,18 @@ def simulate_policy(args):
                          path_length=args.max_path_length,
                          n_paths=args.num_rollouts,
                          render_mode=args.render_mode)
+
+        # velocities_pelvis_filtered  = [path['observations'][:, :3] for path in paths]
+        # velocities_pelvis  = [path['observations'][:, -3:] for path in paths]
+        # import matplotlib.pyplot as plt
+        # fig, axarr = plt.subplots(3, 2)
+
+        # for i in range(3):
+        #     for vel_path in velocities_pelvis:
+        #         axarr[i, 0].plot(range(len(vel_path)), vel_path[:,i])
+        #     for vel_path in velocities_pelvis_filtered:
+        #         axarr[i, 1].plot(range(len(vel_path)), np.cumsum(vel_path[:,i]) * 10)               
+        # plt.show()
 
     if args.render_mode != 'human':
         from pprint import pprint; import pdb; pdb.set_trace()

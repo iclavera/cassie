@@ -29,7 +29,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
-                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=False):
+                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=True):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
@@ -61,13 +61,13 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         # self.obs_dim = 35
         # self.obs_dim = 38
-        self.obs_dim = 36
+        self.obs_dim = 39# #42 39 36
         self.apply_random_force_counter = 0
         self.apply_random_force_maxcount = 0.1/(0.0005*frame_skip)
         self.prob_random_force = 0.15
         self.random_force_on = False
         self.epmaxlen = int(1000*20./frame_skip)
-        self.old_obs = np.zeros([18], dtype=np.float64)
+        self.old_obs = np.zeros([18], dtype=np.float64) #21
 
         # reward function coeffs
         self.stability_cost_coef = stability_cost_coef
@@ -189,10 +189,11 @@ class CassieEnv(gym.Env, utils.EzPickle):
         if True:
             obs = np.concatenate([qpos, qvel])
 
+        # qpos = np.concatenate([qpos.copy(), pelvis_pos_rel_to_r_foot])
         if self._time_step != 0:
-            obs = np.concatenate([qpos, (qpos - self.old_obs).copy()])
+            obs = np.concatenate([qpos, (qpos - self.old_obs).copy()*self.frame_skip/2000., qvel[:3]])
         else:
-            obs = np.concatenate([qpos, (qpos - qpos).copy()])
+            obs = np.concatenate([qpos, (qpos - qpos).copy()*self.frame_skip/2000., qvel[:3]])
         self.old_obs = qpos.copy()
 
         # state randomization
