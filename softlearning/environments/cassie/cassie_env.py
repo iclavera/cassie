@@ -29,7 +29,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
-                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=True):
+                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=False):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
@@ -61,7 +61,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         # self.obs_dim = 35
         # self.obs_dim = 38
-        self.obs_dim = 39# #42 39 36
+        self.obs_dim = 38#39# #42 39 36
         self.apply_random_force_counter = 0
         self.apply_random_force_maxcount = 0.1/(0.0005*frame_skip)
         self.prob_random_force = 0.15
@@ -147,48 +147,21 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         # motors
         motor_pos = np.array(int_state.motor.position).astype(np.float64)
-        motor_vel = np.array(int_state.motor.position).astype(np.float64)
+        motor_vel = np.array(int_state.motor.velocity).astype(np.float64)
 #################################
 
-        if False:
-            qpos = np.array([motor_pos[0], motor_pos[1], motor_pos[2], motor_pos[3], joint_pos[0], joint_pos[1], motor_pos[4],
-                             motor_pos[5], motor_pos[6], motor_pos[7], motor_pos[8], joint_pos[3], joint_pos[4], motor_pos[9]])
+        qpos_filtered = np.array([motor_pos[0], motor_pos[1], motor_pos[2], motor_pos[3], joint_pos[0], joint_pos[1], motor_pos[4],
+                         motor_pos[5], motor_pos[6], motor_pos[7], motor_pos[8], joint_pos[3], joint_pos[4], motor_pos[9]])
 
-            qvel = np.array([motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3], joint_vel[0], joint_vel[1], motor_vel[4],
-                 motor_vel[5], motor_vel[6], motor_vel[7], motor_vel[8], joint_vel[3], joint_vel[4], motor_vel[9]])
+        qvel_filtered = np.array([motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3], joint_vel[0], joint_vel[1], motor_vel[4],
+             motor_vel[5], motor_vel[6], motor_vel[7], motor_vel[8], joint_vel[3], joint_vel[4], motor_vel[9]])
 
-            # obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos,
-            #                       pelvis_transl_vel, pelvis_rot_vel, qvel])
+        # obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos, pelvis_transl_vel, pelvis_rot_vel, qvel])
 
-            obs = np.concatenate([pelvis_ori, qpos, pelvis_transl_vel, pelvis_rot_vel, qvel])
+        obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+            qvel[:3], pelvis_rot_vel, qvel_filtered])
 
-
-        # qvel = np.asarray(state.qvel())[qvel_idx]
-        # obs = np.concatenate([pelvis_ori, qpos, pelvis_transl_vel, qvel[3:]])
-        # import pdb; pdb.set_trace()
-        # obs = np.concatenate([pelvis_ori, qpos, qvel])
-        # obs = np.concatenate([pelvis_ori, qpos, qvel[:3], pelvis_rot_vel, qvel[6:]])
-
-
-        # if True:
-
-        #     joint_vel = np.array(int_state.joint.velocity).astype(np.float64)
-
-        #     motor_vel = np.array(int_state.motor.position).astype(np.float64)
-
-        #     pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity).astype(np.float64)
-
-        #     qvelscrewedup = np.array([motor_vel[0], motor_vel[1], motor_vel[2], motor_vel[3], joint_vel[0], joint_vel[1], motor_vel[4],
-        #          motor_vel[5], motor_vel[6], motor_vel[7], motor_vel[8], joint_vel[3], joint_vel[4], motor_vel[9]])
-
-        #     qvelscrewedup = np.concatenate([pelvis_rot_vel, qvelscrewedup.copy()])
-
-        #     print('screwedup: ', qvelscrewedup)
-
-
-        if True:
-            obs = np.concatenate([qpos, qvel])
-
+        obs = np.concatenate([qpos, qvel])
         # qpos = np.concatenate([qpos.copy(), pelvis_pos_rel_to_r_foot])
         if self._time_step != 0:
             obs = np.concatenate([qpos, (qpos - self.old_obs).copy()*self.frame_skip/2000., qvel[:3]])
@@ -196,8 +169,9 @@ class CassieEnv(gym.Env, utils.EzPickle):
             obs = np.concatenate([qpos, (qpos - qpos).copy()*self.frame_skip/2000., qvel[:3]])
         self.old_obs = qpos.copy()
 
+        obs = obs_filtered.copy()
         # state randomization
-        obs = obs + np.random.normal(0, 0.0001, size=len(obs))
+        obs = obs + np.random.normal(0, 0.001, size=len(obs))
         # state randomization
         # import pdb; pdb.set_trace()
 
@@ -344,8 +318,10 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def apply_random_force(self):
         force = np.zeros((6,))
-        sample = np.random.choice([10, 25, 50]) * np.random.choice([-1, 1])
-        force[np.random.choice([0,1])] = sample
+        sample1 = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
+        sample2 = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
+        force[0] = sample1
+        force[1] = sample2
         self.sim.apply_force(force)
 
     @property

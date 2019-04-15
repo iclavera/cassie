@@ -70,16 +70,26 @@ def simulate_policy(args):
                          n_paths=args.num_rollouts,
                          render_mode=args.render_mode)
 
+        import matplotlib.pyplot as plt
+
+        real = [path['observations'][:, 0] for path in paths][0]
+        filtered = [path['observations'][:, 1] for path in paths][0]
+
+        fig, axarr = plt.subplots(2, 1)
+        axarr[0].plot(range(len(real)), real)
+        axarr[1].plot(range(len(filtered)), filtered)
+
         # velocities_pelvis_filtered  = [path['observations'][:, :3] for path in paths]
         # velocities_pelvis  = [path['observations'][:, -3:] for path in paths]
-        # import matplotlib.pyplot as plt
-        # fig, axarr = plt.subplots(3, 2)
 
+        # fig, axarr = plt.subplots(3, 2)
         # for i in range(3):
         #     for vel_path in velocities_pelvis:
         #         axarr[i, 0].plot(range(len(vel_path)), vel_path[:,i])
         #     for vel_path in velocities_pelvis_filtered:
-        #         axarr[i, 1].plot(range(len(vel_path)), np.cumsum(vel_path[:,i]) * 10)               
+        #         axarr[i, 1].plot(range(len(vel_path)), np.cumsum(vel_path[:,i]) * 10) 
+
+
         # plt.show()
 
     if args.render_mode != 'human':
