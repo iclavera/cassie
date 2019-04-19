@@ -29,7 +29,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
-                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=False):
+                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=True):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
@@ -262,11 +262,24 @@ class CassieEnv(gym.Env, utils.EzPickle):
             ctrl_cost = 0.5 * np.mean(np.square(motor_torques/self.torque_limits))
             stability_cost =  0.5 * np.mean(np.square(qvel[:6]))  #  quadratic velocity of pelvis in y and z direction ->
             impact_cost = 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
+            pelvis_pos = np.array(state.qpos())
+            height_cost = 0.5 * np.sum(np.square(pelvis_pos[2] - 1.0))
+
+
+            qpos_joints_idx = [7, 8, 9, 14, 20, 21, 22, 23, 28, 34] 
+            qpos_joints = np.asarray(state.qpos())[qpos_joints_idx]
+            qpos_joints_ref = np.array([0, 0, 0.5, -1.2, -1.6, 0, 0, 0.5, -1.2, -1.6])
+            jointref_cost = 0.5 * np.sum(np.square(qpos_joints - qpos_joints_ref))
+
 
             reward = 1.0*np.exp(-100.0 * vel_cost) \
                     + 1.0*np.exp(-100.0 * ctrl_cost) \
                     + 1.0*np.exp(-10.0 * stability_cost) \
-                    + 1.0*np.exp(-100.0 * impact_cost)
+                    + 1.0*np.exp(-100.0 * impact_cost) \
+                    + 1.0*float(pelvis_pos[2] > 0.95 and pelvis_pos[2] < 1.05)
+                    # + 1.0*np.exp(-100.0 * height_cost) \
+                    # + 1.0*np.exp(-100.0 * jointref_cost)
+
             # print(np.exp(-100* vel_cost), np.exp(- 100*ctrl_cost), np.exp(- 10*stability_cost), np.exp(- 100*impact_cost))
             # import pdb; pdb.set_trace()
         elif self.task == 'fixed-vel':
@@ -320,8 +333,10 @@ class CassieEnv(gym.Env, utils.EzPickle):
         force = np.zeros((6,))
         sample1 = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
         sample2 = np.random.choice([0, 10, 25, 50]) * np.random.choice([-1, 1])
+        sample3 = -1 * np.random.choice([0, 10, 25, 50])
         force[0] = sample1
         force[1] = sample2
+        force[2] = sample3
         self.sim.apply_force(force)
 
     @property
