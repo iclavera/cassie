@@ -159,7 +159,8 @@ class CassieEnv(gym.Env, utils.EzPickle):
         # obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos, pelvis_transl_vel, pelvis_rot_vel, qvel])
 
         obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
-            qvel[:3], pelvis_rot_vel, qvel_filtered])
+            # (qvel[:3]), pelvis_rot_vel, qvel_filtered])
+            (qvel[:3] + np.random.normal(0, 0.1, size=3)), pelvis_rot_vel, qvel_filtered])
 
         obs = np.concatenate([qpos, qvel])
         # qpos = np.concatenate([qpos.copy(), pelvis_pos_rel_to_r_foot])
@@ -276,7 +277,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
                     + 1.0*np.exp(-100.0 * ctrl_cost) \
                     + 1.0*np.exp(-10.0 * stability_cost) \
                     + 1.0*np.exp(-100.0 * impact_cost) \
-                    + 1.0*float(pelvis_pos[2] > 0.95 and pelvis_pos[2] < 1.05)
+                    + 1.0*float(pelvis_pos[2] > 0.9 and pelvis_pos[2] < 1.1)
                     # + 1.0*np.exp(-100.0 * height_cost) \
                     # + 1.0*np.exp(-100.0 * jointref_cost)
 
