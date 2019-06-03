@@ -29,7 +29,8 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
-                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T', apply_forces=True):
+                 rotation_cost_coef=1e-2, policytask='running', ctrl_type='T',
+                 apply_forces=True, include_pvel=False):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
@@ -51,6 +52,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
         self.ctrl_type = ctrl_type
         self._pd_params_to_set = []
         self.apply_forces = apply_forces
+        self.include_pvel = include_pvel
 
         # action and observation space specs
         self.act_limits_array = self._build_act_limits_array()
@@ -61,7 +63,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         # self.obs_dim = 35
         # self.obs_dim = 38
-        self.obs_dim = 38#39# #42 39 36
+        self.obs_dim = 35 + 3*int(include_pvel) #39# #42 39 36
         self.apply_random_force_counter = 0
         self.apply_random_force_maxcount = 0.1/(0.0005*frame_skip)
         self.prob_random_force = 0.15
@@ -158,17 +160,22 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
         # obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos, pelvis_transl_vel, pelvis_rot_vel, qvel])
 
-        obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
-            # (qvel[:3]), pelvis_rot_vel, qvel_filtered])
-            (qvel[:3] + np.random.normal(0, 0.1, size=3)), pelvis_rot_vel, qvel_filtered])
-
-        obs = np.concatenate([qpos, qvel])
-        # qpos = np.concatenate([qpos.copy(), pelvis_pos_rel_to_r_foot])
-        if self._time_step != 0:
-            obs = np.concatenate([qpos, (qpos - self.old_obs).copy()*self.frame_skip/2000., qvel[:3]])
+        if self.include_pvel:
+            obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+                (qvel[:3]), pelvis_rot_vel, qvel_filtered])
+            # (qvel[:3] + np.random.normal(0, 0.03, size=3)), pelvis_rot_vel, qvel_filtered])
         else:
-            obs = np.concatenate([qpos, (qpos - qpos).copy()*self.frame_skip/2000., qvel[:3]])
-        self.old_obs = qpos.copy()
+            obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+                pelvis_rot_vel, qvel_filtered])            
+        
+        # very old
+        # obs = np.concatenate([qpos, qvel])
+        # # qpos = np.concatenate([qpos.copy(), pelvis_pos_rel_to_r_foot])
+        # if self._time_step != 0:
+        #     obs = np.concatenate([qpos, (qpos - self.old_obs).copy()*self.frame_skip/2000., qvel[:3]])
+        # else:
+        #     obs = np.concatenate([qpos, (qpos - qpos).copy()*self.frame_skip/2000., qvel[:3]])
+        # self.old_obs = qpos.copy()
 
         obs = obs_filtered.copy()
         # state randomization
@@ -261,7 +268,8 @@ class CassieEnv(gym.Env, utils.EzPickle):
 
             vel_cost = forward_vel ** 2
             ctrl_cost = 0.5 * np.mean(np.square(motor_torques/self.torque_limits))
-            stability_cost =  0.5 * np.mean(np.square(qvel[:6]))  #  quadratic velocity of pelvis in y and z direction ->
+            stability_cost =  0.5 * np.mean(np.square(qvel[:]))  #  quadratic velocity of pelvis in y and z direction ->
+            # stability_cost =  0.5 * np.mean(np.square(qvel[:6]))  #  quadratic velocity of pelvis in y and z direction ->
             impact_cost = 0.5 * np.sum(np.square(np.clip(foot_forces, -1, 1)))
             pelvis_pos = np.array(state.qpos())
             height_cost = 0.5 * np.sum(np.square(pelvis_pos[2] - 1.0))
