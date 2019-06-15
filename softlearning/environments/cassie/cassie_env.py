@@ -30,7 +30,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
     def __init__(self, render=False, fix_pelvis=False, frame_skip=20,
                  stability_cost_coef=1e-2, ctrl_cost_coef=1.0, alive_bonus=0.5, impact_cost_coef=1e-5,
                  rotation_cost_coef=1e-2, policytask='running', ctrl_type='T',
-                 apply_forces=True, include_pvel=False):
+                 apply_forces=True, include_pvel=True, veloption='acceleration'):
         print('fr_skip:', frame_skip, 'task', policytask)
         self.sim = CassieSim()
         if render:
@@ -53,6 +53,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
         self._pd_params_to_set = []
         self.apply_forces = apply_forces
         self.include_pvel = include_pvel
+        self.veloption = veloption
 
         # action and observation space specs
         self.act_limits_array = self._build_act_limits_array()
@@ -141,7 +142,7 @@ class CassieEnv(gym.Env, utils.EzPickle):
         # pelvis_pos = np.array(int_state.pelvis.position)
         pelvis_rot_vel = np.array(int_state.pelvis.rotationalVelocity).astype(np.float64)
         pelvis_transl_vel = np.array(int_state.pelvis.translationalVelocity).astype(np.float64)
-        # pelvis_trans_acc = np.array(int_state.pelvis.translationalAcceleration)
+        pelvis_trans_acc = np.array(int_state.pelvis.translationalAcceleration).astype(np.float64)
 
         # joints
         joint_pos = np.array(int_state.joint.position).astype(np.float64)
@@ -161,8 +162,18 @@ class CassieEnv(gym.Env, utils.EzPickle):
         # obs = np.concatenate([pelvis_pos_rel_to_r_foot, pelvis_ori, qpos, pelvis_transl_vel, pelvis_rot_vel, qvel])
 
         if self.include_pvel:
-            obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
-                (qvel[:3]), pelvis_rot_vel, qvel_filtered])
+
+            if self.veloption == 'true_vel':
+                obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+                    (qvel[:3]), pelvis_rot_vel, qvel_filtered])
+            elif self.veloption == 'trans_vel':
+                obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+                    pelvis_transl_vel, pelvis_rot_vel, qvel_filtered])
+            elif self.veloption == 'acceleration':
+                obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
+                    pelvis_trans_acc, pelvis_rot_vel, qvel_filtered])                                    
+            else:
+                raise('invalid veloption')
             # (qvel[:3] + np.random.normal(0, 0.03, size=3)), pelvis_rot_vel, qvel_filtered])
         else:
             obs_filtered = np.concatenate([pelvis_ori, qpos_filtered, 
@@ -217,6 +228,10 @@ class CassieEnv(gym.Env, utils.EzPickle):
         #initial state randomization
         qpos = self.sim.get_state().qpos()
         qvel = self.sim.get_state().qvel()
+
+        qpos = np.array(self.sim.get_state().qpos())
+        idxs = [7, 8, 9, 14, 20, 21, 22, 23, 28, 34]
+        qpos[idxs] = np.array([0.0035, -0.0018, 0.5278, -1.2321, -1.6264, -0.0068, 0.0055, 0.5291, -1.2335, -1.6273])
 
         if True:
             # qpos[:3] = qpos[:3] + np.random.uniform(low=-0.1, high=0.1, size=3)
